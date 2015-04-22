@@ -1,93 +1,99 @@
 var AWS = require('aws-sdk');
 
-var CloudWatchBuddy;
+var cloudwatch, cloudwatchlogs;
 
-(function(){
-    var cloudwatch, cloudwatchlogs, putMetricData;
+var CloudWatchBuddy = function(aws, options){
 
-    CloudWatchBuddy = function(aws, options) {
-        this.increments = {};
-        this.stats = {};
+    cloudwatch = new AWS.CloudWatch(aws);
+    cloudwatchlogs = new AWS.CloudWatchLogs();
 
-        this.namespace = options.namespace; // TODO: check if undefined before using later
-        this.timeout = options.timeout || 120;  // Default timeout of 2 minutes
+    var api = {};
 
-        cloudwatch = new AWS.CloudWatch(aws);
-        cloudwatchlogs = new AWS.CloudWatchLogs();
+    var _increments = {};
+    var _stats = {};
+    var _logs = [];
 
-        putMetricData = function() {
-            console.log(this.namespace);
+    var _namespace = options.namespace;
+    var _timeout = options.timeout;
+    var _logFormat = options.logFormat;
+    var _addTimestamp = options.addTimestamp;
+    var _addInstanceId = options.addInstanceId;
 
-            var params = {
-                MetricData:[],
-                Namespace: this.namespace
-            };
+    var putMetricData = function() {
 
-            // Add the increments
+        var params = {
+            MetricData:[],
+            Namespace: _namespace
+        };
 
-            if (Object.keys(this.increments).length > 0) {
-                _(increments).each(function(val, key){
-                    params.MetricData.push({
-                        MetricName: key,
-                        Timestamp: new Date,
-                        Unit: 'Count',
-                        Value: val,
-                    });
-                    increments[key] = 0;  // reset for next time
+        // Add the increments
+
+        if (Object.keys(_increments).length > 0) {
+            for (key in _increments) {
+                var val = _increments[key];
+
+                params.MetricData.push({
+                    MetricName: key,
+                    Timestamp: new Date,
+                    Unit: 'Count',
+                    Value: val,
                 });
-            }
-
-            // Add the stats
-            if (Object.keys(this.stats).length > 0) {
-                _(stats).each(function(obj, key){
-                    params.MetricData.push({
-                        MetricName: key,
-                        Timestamp: new Date,
-                        Unit: obj.Unit,
-                        StatisticValues: {
-                            Maximum: obj.Maximum,
-                            Minimum: obj.Minimum,
-                            SampleCount: obj.SampleCount,
-                            Sum: obj.Sum
-                        }
-                    });
-                    stats[key] = {
-                        Maximum: 0,
-                        Minimum: 0,
-                        SampleCount: 0,
-                        Sum: 0
-                    };
-                });
-            }
-
-            if (params.MetricData.length > 0) {
-                // cloudwatch.putMetricData(params, function(err, data){
-                //     // TODO: what to do with callback?
-                // });
-                console.log(params);
+                _increments[key] = 0;  // reset for next time
             }
         }
 
-        putLogData = function(params, callback) {
-            cloudwatchlogs.putLogData
+        // Add the stats
+        if (Object.keys(_stats).length > 0) {
+            for (key in _stats) {
+                var obj = _stats[key];
+                params.MetricData.push({
+                    MetricName: key,
+                    Timestamp: new Date,
+                    Unit: obj.Unit,
+                    StatisticValues: {
+                        Maximum: obj.Maximum,
+                        Minimum: obj.Minimum,
+                        SampleCount: obj.SampleCount,
+                        Sum: obj.Sum
+                    }
+                });
+                _stats[key] = {
+                    Maximum: 0,
+                    Minimum: 0,
+                    SampleCount: 0,
+                    Sum: 0
+                };
+            }
         }
 
-        // Set interval for sending metrics
-        setInterval(function(){
-            putMetricData();
-        }, this.timeout * 1000);
+        if (params.MetricData.length > 0) {
+            // cloudwatch.putMetricData(params, function(err, data){
+            //     // TODO: what to do with callback?
+            //     // TODO: if err, see if retryable
+            // });
+            console.log(JSON.stringify(params, null, 2));
+        }
     }
 
-    CloudWatchBuddy.prototype.increment = function (key) {
-        if (this.increments[key] === undefined) {
-            this.increments[key] = 0;
+    var putLogData = function() {
+        console.log(_logs);
+    }
+
+    setInterval(function(){     // TODO: better way?
+        putMetricData();
+        putLogData();
+    }, _timeout * 1000);
+
+    api.increment = function(key){
+        if (_increments[key] === undefined) {
+            _increments[key] = 0;
         }
-        this.increments[key]++;
+        _increments[key]++;
     };
 
-    CloudWatchBuddy.prototype.stat = function (key, value, unit) {
-        if (this.stats[key] === undefined) {
-            this.stats[key] = {
+    api.stat = function(key, value, unit) {
+        if (_stats[key] === undefined) {
+            _stats[key] = {
                 Unit: unit,
                 Maximum: value,
                 Minimum: value,
@@ -95,13 +101,29 @@ var CloudWatchBuddy;
                 Sum: value
             }
         } else {
-            this.stats[key].Maximum = value > this.stats[key].Maximum ? value : this.stats[key].Maximum;
-            this.stats[key].Minimum = value < this.stats[key].Minimum ? value : this.stats[key].Minimum;
-            this.stats[key].SampleCount++;
-            this.stats[key].Sum += value;
+            _stats[key].Maximum = value > _stats[key].Maximum ? value : _stats[key].Maximum;
+            _stats[key].Minimum = value < _stats[key].Minimum ? value : _stats[key].Minimum;
+            _stats[key].SampleCount++;
+            _stats[key].Sum += value;
         }
     };
 
-})();
+    api.log = function(msg) {
+        if (_logFormat === 'string') {
+            if (typeof msg === 'object') {
+                msg = JSON.stringify(msg);
+            }
+            _logs.push((_addTimestamp ? new Date + ' ' : '') + (_addInstanceId ? 'instand-id ' : '') + msg);
+        } else {
+            var logObj = {};
+            if (_addTimestamp) { logObj['timestamp'] = new Date; }
+            if (_addInstanceId) { logObj['instand_id'] = 'instand-id'; }
+            logObj['message'] = msg;
+            _logs.push(logObj);
+        }
+    };
+
+    return api;
+}
 
 module.exports = CloudWatchBuddy;
