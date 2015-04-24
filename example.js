@@ -1,36 +1,47 @@
 var CloudWatchBuddy = require(__dirname + '/index.js');
 
 var awsOptions = {
-	// AWS options here
+	accessKeyId: '',
+	secretAccessKey: '',
+	sessionToken: '',
+	region: 'us-east-1'
 };
 
-var cwbOptions = {
-	namespace: 'receipts-api',
-	timeout: 1,
-	addInstanceId: true,
+var cwbMetricsOptions = {
+	namespace: 'test-data',
+	timeout: 5
+};
+
+var cwbMetricsOptions = {
+	logGroup: 'test-data',
+	timeout: 10,
+	addInstanceId: false,
 	addTimestamp: true,
-	logFormat: 'string' //|| 'json'
+	logFormat: 'json' //|| 'json'
 };
 
-var cwb = new CloudWatchBuddy(awsOptions, cwbOptions);
+//var cwbMetrics = new CloudWatchBuddy(awsOptions).metrics(cwbMetricsOptions);
+var cwbLogs = new CloudWatchBuddy(awsOptions).logs(cwbMetricsOptions);
 
-cwb.increment('pageviews');
-cwb.increment('pageviews');
-cwb.increment('pageviews');
-cwb.increment('pageviews');
-cwb.increment('pageviews');
+// cwbMetrics.increment('pageviews');
+// cwbMetrics.increment('pageviews');
+// cwbMetrics.increment('pageviews');
+// cwbMetrics.increment('pageviews');
+// cwbMetrics.increment('pageviews');
 
-cwb.stat('loadtime', 10, 'Milliseconds');
-cwb.stat('loadtime', 15, 'Milliseconds');
-cwb.stat('loadtime', 7, 'Milliseconds');
-cwb.stat('loadtime', 100, 'Milliseconds');
+// cwbMetrics.stat('loadtime', 10, 'Milliseconds');
+// cwbMetrics.stat('loadtime', 15, 'Milliseconds');
+// cwbMetrics.stat('loadtime', 7, 'Milliseconds');
+// cwbMetrics.stat('loadtime', 100, 'Milliseconds');
 
-cwb.stat('pagesize', 10, 'Megabytes');
+// cwbMetrics.stat('pagesize', 10, 'Megabytes');
 
-cwb.log('Test message');
+//cwbMetrics.stat('serverload', 10, 'Percent', {serverName:'web01.example.com',region:'us-east-1'});
+
+cwbLogs.log('errors', 'Test message');
 
 var i=0;
 setInterval(function(){
 	i++;
-	console.log('Waiting: ' + i);
+	//console.log('Waiting: ' + i);
 },1000);
