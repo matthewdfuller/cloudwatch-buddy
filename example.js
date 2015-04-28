@@ -9,39 +9,43 @@ var awsOptions = {
 
 var cwbMetricsOptions = {
 	namespace: 'test-data',
-	timeout: 5
+	timeout: 60
 };
 
-var cwbMetricsOptions = {
+var cwbLogsOptions = {
 	logGroup: 'test-data',
-	timeout: 10,
+	timeout: 60,
 	addInstanceId: false,
 	addTimestamp: true,
 	logFormat: 'json' //|| 'json'
 };
 
-//var cwbMetrics = new CloudWatchBuddy(awsOptions).metrics(cwbMetricsOptions);
-var cwbLogs = new CloudWatchBuddy(awsOptions).logs(cwbMetricsOptions);
+var cwbMetrics = new CloudWatchBuddy(awsOptions).metrics(cwbMetricsOptions);
+var cwbLogs = new CloudWatchBuddy(awsOptions).logs(cwbLogsOptions);
 
-// cwbMetrics.increment('pageviews');
-// cwbMetrics.increment('pageviews');
-// cwbMetrics.increment('pageviews');
-// cwbMetrics.increment('pageviews');
-// cwbMetrics.increment('pageviews');
+cwbMetrics.increment('pageviews');
+cwbMetrics.increment('pageviews');
+cwbMetrics.increment('pageviews');
+cwbMetrics.increment('pageviews');
+cwbMetrics.increment('pageviews');
 
-// cwbMetrics.stat('loadtime', 10, 'Milliseconds');
-// cwbMetrics.stat('loadtime', 15, 'Milliseconds');
-// cwbMetrics.stat('loadtime', 7, 'Milliseconds');
-// cwbMetrics.stat('loadtime', 100, 'Milliseconds');
+cwbMetrics.stat('loadtime', 10, 'Milliseconds');
+cwbMetrics.stat('loadtime', 15, 'Milliseconds');
+cwbMetrics.stat('loadtime', 7, 'Milliseconds');
+cwbMetrics.stat('loadtime', 100, 'Milliseconds');
 
-// cwbMetrics.stat('pagesize', 10, 'Megabytes');
+cwbMetrics.stat('pagesize', 10, 'Megabytes');
 
-//cwbMetrics.stat('serverload', 10, 'Percent', {serverName:'web01.example.com',region:'us-east-1'});
+cwbMetrics.stat('serverload', 10, 'Percent', {serverName:'web01.example.com',region:'us-east-1'});
+cwbMetrics.stat('serverload', 10, 'Percent', {serverName:'web02.example.com',region:'us-east-1'});
 
-cwbLogs.log('errors', 'Test message');
+cwbLogs.log('errors', 'Dual message');
+cwbLogs.log('signups', 'Some user');
 
 var i=0;
 setInterval(function(){
 	i++;
-	//console.log('Waiting: ' + i);
-},1000);
+	cwbMetrics.stat('pagesize', 10, 'Megabytes');
+	cwbLogs.log('errors', 'Dual message: ' + i);
+	cwbLogs.log('signups', 'Some user: ' + i);
+},500);

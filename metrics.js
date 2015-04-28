@@ -98,6 +98,9 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
         }
 
         if (params.MetricData.length > 0) {
+            console.log(JSON.stringify(params, null, 2));
+            setUploadInterval();
+            return;
             // TODO: Check size before sending and split if needed
             cloudwatch.putMetricData(params, function(err, data){
                 console.log(err);
@@ -132,6 +135,8 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
     };
 
     api.stat = function(key, value, unit, dimensions) {
+        if (!unit || validMetricValues.indexOf(unit) === -1) { return; } // Only accept valid AWS metrics
+
         if (_stats[key] === undefined) {
             _stats[key] = {
                 Unit: unit,

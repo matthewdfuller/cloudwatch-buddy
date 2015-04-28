@@ -3,7 +3,7 @@ cloudwatch-buddy
 
 ## Description
 
-cloudwatch-buddy is a node module which easily allows for the sending of CloudWatch metrics, statistics, and logs to AWS CloudWatch. Using this module, you can easily replace StatsD with AWS CloudWatch. It gracefully hadles single increments (such as pageviews), as well as more complex measurements (page load times or size) with sum, minimums, and maximums with custom dimensions. Additionally, it can stream logs to AWS, dealing with the timestamps and formatting issues. It also manages periodic sending of data and the AWS "next token" pattern.
+cloudwatch-buddy is a node module which easily allows for the sending of CloudWatch metrics, statistics, and logs to AWS CloudWatch. Using this module, you can easily replace StatsD with AWS CloudWatch. It gracefully hadles single increments (such as pageviews), as well as more complex measurements (page load times or size) with sum, minimums, and maximums with custom dimensions. Additionally, it can stream logs to AWS, dealing with the timestamps and formatting issues. It also manages periodic sending of logs and the AWS "next token" pattern.
 
 ## Features
 
@@ -33,11 +33,13 @@ var awsOptions = {
 
 var metricsOptions = {			// You can use either or both metric and log collection.
 	namespace: 'test-data',
-	timeout: 10					// See below for a complete list of options
+	timeout: 60					// See below for a complete list of options
 };
 
 var logsOptions = {
-	timeout: 10,
+	logGroup: 'my-application',
+	timeout: 60,
+	maxSize: 10000,
 	addInstanceId: true,
 	addTimestamp: true,
 	logFormat: 'string'
@@ -58,7 +60,8 @@ cwbMetrics.stat('serverload', 10, 'Percent', {
 });
 
 // Send a log
-cwbLogs.log('Test message');
+cwbLogs.log('errors', 'Test message');
+cwbLogs.log('signups', 'New user');
 ```
 
 ## Options
@@ -79,8 +82,17 @@ The following metrics options are supported:
 
 The following logs options are supported:
 
+`logGroup` (Required) - The log group name in AWS. This must already exist (the module will create streams for you, but not log groups).
 
+`timeout` - The interval, in seconds, to submit your logs. The minimum is 60 seconds and the maximum is 30 minutes (1800 s). The default is 120 seconds.
 
+`maxSize` - The maximum size, in bytes, of a log stream group between uploads. The minimum is 5000 and the maximum is 1048576 (~1MB). The default is 200000 (200KB). Note that this is a *rough estimate*.
+
+`logFormat` - Either "string" or "json". For string, the logs are written as timestamp - instance id - log message. For JSON, it is saved as an object with these same keys. The default is "string".
+
+`addTimestamp` - Whether the timestamp should be included in the log message. All logs have timestamps sent to AWS (used for ordering), but this option allows the timestamp to be included in the actual log message contents as well. The default is false.
+
+`addInstanceId` - Whether the EC2 instance ID should be included in the log message. The default is false. The module will attempt to load the instance ID from the AWS metadata service. If it cannot be determined, the instance ID will become "unknown".
 
 
 ## Known Limitations
@@ -88,4 +100,3 @@ The following logs options are supported:
 * Because of the 40KB limit imposed by API calls to CloudWatch, the number of stats that can be recorded is limited to approximately 100. This means that you can have 100 separate metric names ("page load time," "page size," etc.). You can update them as often as needed, either as increments or with dimensions, but you cannot create too many. Note: this is probably a good limit, as AWS imposes limits on the number of distinct metric names you can have as well.
 
 * The log group must exist on AWS before the module can write the logs. Future versions may allow for the log group to be created automatically, but it would require more permissions than are preferred. At this point, simply create the log group for your application before running this module.
-

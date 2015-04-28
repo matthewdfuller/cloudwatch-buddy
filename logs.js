@@ -5,14 +5,16 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
     var api = {};
 
     var _logs = {};
+    var _logsToSend;
 
     var _existingLogStreams = {};   // Holds known streams and their sequence tokens
+    var _queuedSize = {};    // bytes to upload for each stream
 
     var _uploadInterval;
 
     var _logGroup = options.logGroup;
-    var _timeout = (options.timeout && typeof options.timeout === 'number' && options.timeout >= 60 && options.timeout <= 1800) ? options.timeout : 5;
-    var _maxSize = (options.maxSize && typeof options.maxSize === 'number' && options.maxSize < 40000) ? options.maxSize : 40000;  // Max upload size if 40KB
+    var _timeout = (options.timeout && typeof options.timeout === 'number' && options.timeout >= 60 && options.timeout <= 1800) ? options.timeout : 120;
+    var _maxSize = (options.maxSize && typeof options.maxSize === 'number' && options.maxSize < 1048576 && options.maxSize > 5000) ? options.maxSize : 200000;  // Default upload size of 200KB, AWS max of 1,048,576 bytes
     var _logFormat = (options.logFormat && typeof options.logFormat === 'string' && (options.logFormat === 'string' || options.logFormat === 'json')) ? options.logFormat : 'string';
     var _addTimestamp = (options.addTimestamp && typeof options.addTimestamp === 'boolean') ? options.addTimestamp : false;
     var _addInstanceId = (options.addInstanceId && typeof options.addInstanceId === 'boolean') ? options.addInstanceId : false;
@@ -30,42 +32,49 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
 
     var putLogData = function() {
         clearInterval(_uploadInterval);
-        console.log('Put data called');
-        async.eachSeries(Object.keys(_logs), function(stream, callback){
-            if (!_logs[stream].length) {
+
+        // Copy the log object so logs saved during the upload process aren't lost
+        _logsToSend = JSON.parse(JSON.stringify(_logs));    // copy; don't reference
+        _logs = {};                                         // Reset the logs instantly so none are lost
+        
+        // Reset the queued sizes
+        for (key in _logsToSend) {
+            _queuedSize[key] = 0;
+        }
+
+        async.eachSeries(Object.keys(_logsToSend), function(stream, callback){
+
+            if (!_logsToSend[stream].length) {
                 return callback();    // go to the next one
             }
-
-            console.log('Running steps for: ' + stream);
 
             checkIfLogStreamExistsAndCreateItIfItDoesNot(stream, function(err, data){
                 if (err) {
                     callback(err);
                 } else {
                     // Stream now exists
-                    console.log('Stream now exists');
                     var params = {
-                        logEvents: _logs[stream],
+                        logEvents: _logsToSend[stream],
                         logGroupName: _logGroup,
                         logStreamName: stream,
                         sequenceToken: _existingLogStreams[stream]
                     };
                     cloudwatchlogs.putLogEvents(params, function(err, data){
                         if (err) {
-                            console.log('Error putting log events');
                             if (err.code === 'InvalidSequenceTokenException') {
-                                console.log('InvalidSequenceTokenException');
                                 params.sequenceToken = err.message.substring(err.message.indexOf(':') + 2);
-                                console.log('New sequence token is: ' + params.sequenceToken);
                                 cloudwatchlogs.putLogEvents(params, function(err, data){
-                                    console.log(err);
-                                    console.log(data);
+                                    if (err) {
+                                        // Still having issues
+                                        callback(err);
+                                    } else {
+                                        _existingLogStreams[stream] = data.nextSequenceToken;   // Set this for next time
+                                        callback(err, data);
+                                    }
                                 });
                             }
                         } else {
-                            console.log('Put log events');
                             _existingLogStreams[stream] = data.nextSequenceToken;   // Set this for next time
-                            _logs[stream] = []; // Remove the logs
                             callback();
                         }
                     });
@@ -73,28 +82,17 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
             });
         }, function(err){
             if (err) {
-                console.log(err);
-            } else {
-                console.log('Done stream');
-                setUploadInterval();    // Reset timer for next loop
+                
             }
+
+            setUploadInterval();    // Reset timer for next loop
         });
-    };
-
-    var checkLogsBodySize = function(stream) {
-        var size = (JSON.stringify(_logs[stream]) * 2) + (_logs[stream].length * 26) + 1000;   // very rough estimate of size overhead, plus 26 bytes per log
-
-        if (size > _maxSize || _logs[stream].length > 10000) {  // AWS limit of 10000
-            putLogData();
-        }
     };
 
     var checkIfLogStreamExistsAndCreateItIfItDoesNot = function(stream, callback) {
         if (_existingLogStreams[stream]) {
-            console.log('Existing stream for: ' + stream);
             callback();
         } else {
-            console.log('Checking stream for: ' + stream);
             var params = {
                 logGroupName: _logGroup,
                 logStreamNamePrefix: stream,
@@ -102,13 +100,11 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
             };
             cloudwatchlogs.describeLogStreams(params, function(err, data){
                 if (!err && data.logStreams.length > 0) {
-                    console.log('Successfully described streams');
                     // The stream already exists, so add it to our known array and continue
                     _existingLogStreams[stream] = null; // Will eventually hold the sequence token
                     callback();
                 } else {
                     // Create the stream
-                    console.log('Creating stream');
                     var params = {
                         logGroupName: _logGroup,
                         logStreamName: stream
@@ -122,7 +118,6 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
 
     var setUploadInterval = function() {
         _uploadInterval = setInterval(function(){
-            console.log('upload setInterval');
             putLogData();
         }, _timeout * 1000);
     };
@@ -153,6 +148,12 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
                 timestamp: new Date().getTime(),
                 message: JSON.stringify(logObj, null, 2)    // AWS only accepts a string
             });
+        }
+
+        _queuedSize[stream] += (26 + JSON.stringify(_logs[stream]).length * 2);    //~2 bytes per character plus 26 bytes of overhead per log
+        
+        if (((_queuedSize[stream]) >= (_maxSize - 1000)) || _logs[stream].length > 9000) {   // Leave some room (AWS max is 10,000 logs)
+            putLogData();
         }
     };
 

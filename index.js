@@ -17,12 +17,20 @@ var CloudWatchBuddy = function(aws){
                 throw new Error('Valid metrics config with namespace is required');
             }
 
+            if (options.namespace.indexOf('AWS/') === 0) {
+                throw new Error('Namespace cannot begin with "AWS/"');
+            }
+
             var cloudwatch = new AWS.CloudWatch(aws);
             return new metricsHelper(cloudwatch, options);
         },
         logs: function(options) {
             if (!options || !options.logGroup || typeof options.logGroup !== 'string' || options.logGroup.length > 512) {
                 throw new Error('Valid logs config with log group is required');
+            }
+
+            if (options.logGroup.length > 512) {
+                throw new Error('Log group name cannot be more than the AWS limit of 512 characters');
             }
 
             var cloudwatchlogs = new AWS.CloudWatchLogs(aws);
