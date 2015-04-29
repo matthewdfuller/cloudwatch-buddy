@@ -98,13 +98,8 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
         }
 
         if (params.MetricData.length > 0) {
-            console.log(JSON.stringify(params, null, 2));
-            setUploadInterval();
-            return;
             // TODO: Check size before sending and split if needed
             cloudwatch.putMetricData(params, function(err, data){
-                console.log(err);
-                console.log('Sent');
                 
                 // TODO: if err, see if retryable
                 setUploadInterval();
@@ -116,7 +111,6 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
 
     var setUploadInterval = function() {
         _uploadInterval = setInterval(function(){
-            console.log('upload setInterval');
             putMetricData();
         }, _timeout * 1000);
     }
