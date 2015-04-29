@@ -1,6 +1,8 @@
 cloudwatch-buddy
 ===============
 
+WARNING: This is currently in "beta" and has not been extensively tested. Please wait for a 1.0.0 release before using in production. Until then, feel free to create issues or pull requests.
+
 ## Description
 
 cloudwatch-buddy is a node module which easily allows for the sending of CloudWatch metrics, statistics, and logs to AWS CloudWatch. Using this module, you can easily replace StatsD with AWS CloudWatch. It gracefully hadles single increments (such as pageviews), as well as more complex measurements (page load times or size) with sum, minimums, and maximums with custom dimensions. Additionally, it can stream logs to AWS, dealing with the timestamps and formatting issues. It also manages periodic sending of logs and the AWS "next token" pattern.
