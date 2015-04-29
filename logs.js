@@ -137,12 +137,12 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
             }
             _logs[stream].push({
                 timestamp: new Date().getTime(),
-                message: (_addTimestamp ? new Date + ' ' : '') + (_addInstanceId ? 'instand-id ' : '') + msg
+                message: (_addTimestamp ? new Date + ' ' : '') + (_addInstanceId ? _instanceId : '') + msg
             });
         } else {
             var logObj = {};
             if (_addTimestamp) { logObj['timestamp'] = new Date; }
-            if (_addInstanceId) { logObj['instand_id'] = 'instand-id'; }
+            if (_addInstanceId) { logObj['instance_id'] = _instanceId; }
             logObj['message'] = msg;
             _logs[stream].push({
                 timestamp: new Date().getTime(),

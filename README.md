@@ -97,6 +97,24 @@ The following logs options are supported:
 `addInstanceId` - Whether the EC2 instance ID should be included in the log message. The default is false. The module will attempt to load the instance ID from the AWS metadata service. If it cannot be determined, the instance ID will become "unknown".
 
 
+## Permissions
+
+You can either hard code AWS credentials into the application (please don't do this unless you're testing locally) or use IAM roles. When using IAM roles, your instance must have the following permissions in order to allow cloudwatch-buddy to create log streams, put log events, and put metrics:
+
+```
+{
+	"Effect" : "Allow",
+	"Action" : [
+		"cloudwatch:PutMetricData",
+		"logs:CreateLogStream",
+		"logs:DescribeLogGroups",
+		"logs:DescribeLogStreams",
+		"logs:PutLogEvents"
+	],
+	"Resource" : "*"
+}
+```
+
 ## Known Limitations
 
 * Because of the 40KB limit imposed by API calls to CloudWatch, the number of stats that can be recorded is limited to approximately 100. This means that you can have 100 separate metric names ("page load time," "page size," etc.). You can update them as often as needed, either as increments or with dimensions, but you cannot create too many. Note: this is probably a good limit, as AWS imposes limits on the number of distinct metric names you can have as well.

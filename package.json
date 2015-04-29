@@ -1,6 +1,6 @@
 {
   "name": "cloudwatch-buddy",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "AWS CloudWatch metrics and logging for node apps",
   "main": "index.js",
   "scripts": {
