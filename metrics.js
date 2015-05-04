@@ -34,6 +34,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
 
     var _increments = {};
     var _stats = {};
+    var _statsWithDimensions = [];
 
     var _uploadInterval;
 
@@ -81,14 +82,41 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                     }
                 };
 
-                if (obj.Dimensions) {
-                    pushObj['Dimensions'] = obj.Dimensions;
-                }
-
                 params.MetricData.push(pushObj);
 
                 // Reset the key
                 _stats[key] = {
+                    Maximum: 0,
+                    Minimum: 0,
+                    SampleCount: 0,
+                    Sum: 0
+                };
+            }
+        }
+
+        // Add stats with dimensions
+        if (_statsWithDimensions.length > 0) {
+            for (index in _statsWithDimensions) {
+                var obj = _statsWithDimensions[index];
+                
+                var pushObj = {
+                    MetricName: obj.MetricName,
+                    Timestamp: new Date,
+                    Unit: obj.Unit,
+                    StatisticValues: {
+                        Maximum: obj.Maximum,
+                        Minimum: obj.Minimum,
+                        SampleCount: obj.SampleCount,
+                        Sum: obj.Sum
+                    },
+                    Dimensions: obj.Dimensions
+                };
+
+                params.MetricData.push(pushObj);
+
+                _statsWithDimensions[index] = {
+                    MetricName: obj.MetricName,
+                    Unit: obj.Unit,
                     Maximum: 0,
                     Minimum: 0,
                     SampleCount: 0,
@@ -131,7 +159,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
     api.stat = function(key, value, unit, dimensions) {
         if (!unit || validMetricValues.indexOf(unit) === -1) { return; } // Only accept valid AWS metrics
 
-        if (_stats[key] === undefined) {
+        if (_stats[key] === undefined && !dimensions) {
             _stats[key] = {
                 Unit: unit,
                 Maximum: value,
@@ -139,26 +167,64 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                 SampleCount: 1,
                 Sum: value
             };
+        } else if (dimensions && typeof dimensions === 'object' && Object.keys(dimensions).length > 0) {
+            var convertedDimensions = [];
+
+            for (name in dimensions) {
+                convertedDimensions.push({
+                    Name: name,
+                    Value: dimensions[name]
+                });
+            }
+
+            // Handle different dimensions sets
+            if (_statsWithDimensions.length > 0) {
+                for (index in _statsWithDimensions) {
+                    // Loop through each dimensions stat
+                    if (JSON.stringify(_statsWithDimensions[index].Dimensions) === JSON.stringify(convertedDimensions)) {
+                        // Edit the existing dimensions set
+                        _statsWithDimensions[index].Maximum = value > _statsWithDimensions[index].Maximum ? value : _statsWithDimensions[index].Maximum;
+                        _statsWithDimensions[index].Minimum = value < _statsWithDimensions[index].Minimum ? value : _statsWithDimensions[index].Minimum;
+                        _statsWithDimensions[index].SampleCount++;
+                        _statsWithDimensions[index].Sum += value;
+                        break;  // Don't continue the for loop once detected
+                    } else {
+                        // This set of dimensions doesn't exist yet, so create it
+                        _statsWithDimensions.push({
+                            MetricName: key,
+                            Unit: unit,
+                            Maximum: value,
+                            Minimum: value,
+                            SampleCount: 1,
+                            Sum: value,
+                            Dimensions: convertedDimensions
+                        });
+                    }
+                }
+            } else {
+                _statsWithDimensions.push({
+                    MetricName: key,
+                    Unit: unit,
+                    Maximum: value,
+                    Minimum: value,
+                    SampleCount: 1,
+                    Sum: value,
+                    Dimensions: convertedDimensions
+                });
+            }
         } else {
             _stats[key].Maximum = value > _stats[key].Maximum ? value : _stats[key].Maximum;
             _stats[key].Minimum = value < _stats[key].Minimum ? value : _stats[key].Minimum;
             _stats[key].SampleCount++;
             _stats[key].Sum += value;
         }
-
-        if (dimensions && typeof dimensions === 'object' && Object.keys(dimensions).length > 0) {
-            _stats[key]['Dimensions'] = [];
-
-            for (name in dimensions) {
-                _stats[key]['Dimensions'].push({
-                    Name: name,
-                    Value: dimensions[name]
-                });
-            }
-        }
     };
 
     return api;
+}
+
+function compareObjects(obj1, obj2) {
+
 }
 
 module.exports = CloudWatchBuddyMetrics;
