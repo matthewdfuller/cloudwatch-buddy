@@ -120,7 +120,8 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                     Maximum: 0,
                     Minimum: 0,
                     SampleCount: 0,
-                    Sum: 0
+                    Sum: 0,
+                    Dimensions: obj.Dimensions
                 };
             }
         }
@@ -171,6 +172,8 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
             var convertedDimensions = [];
 
             for (name in dimensions) {
+                if (typeof name !== 'string' || typeof dimensions[name] === 'object') { continue; }   // Only allow string - string / integer mappings
+
                 convertedDimensions.push({
                     Name: name,
                     Value: dimensions[name]
@@ -178,6 +181,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
             }
 
             // Handle different dimensions sets
+            var dimensionsFound = false;
             if (_statsWithDimensions.length > 0) {
                 for (index in _statsWithDimensions) {
                     // Loop through each dimensions stat
@@ -187,21 +191,13 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                         _statsWithDimensions[index].Minimum = value < _statsWithDimensions[index].Minimum ? value : _statsWithDimensions[index].Minimum;
                         _statsWithDimensions[index].SampleCount++;
                         _statsWithDimensions[index].Sum += value;
+                        dimensionsFound = true;
                         break;  // Don't continue the for loop once detected
-                    } else {
-                        // This set of dimensions doesn't exist yet, so create it
-                        _statsWithDimensions.push({
-                            MetricName: key,
-                            Unit: unit,
-                            Maximum: value,
-                            Minimum: value,
-                            SampleCount: 1,
-                            Sum: value,
-                            Dimensions: convertedDimensions
-                        });
                     }
                 }
-            } else {
+            }
+
+            if (!dimensionsFound) {
                 _statsWithDimensions.push({
                     MetricName: key,
                     Unit: unit,

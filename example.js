@@ -46,6 +46,8 @@ cwbMetrics.stat('serverload', 26, 'Percent', {serverName:'web01.example.com',reg
 cwbMetrics.stat('serverload', 21, 'Percent', {serverName:'web01.example.com',region:'us-east-1'});
 cwbMetrics.stat('serverload', 29, 'Percent', {serverName:'web01.example.com',region:'us-east-1'});
 cwbMetrics.stat('serverload', 24, 'Percent', {serverName:'web01.example.com',region:'us-east-1'});
+cwbMetrics.stat('serverload', 30, 'Percent', {serverName:'web03.example.com',region:'us-east-1'});
+cwbMetrics.stat('serverload', 30, 'Percent', {serverName:'web03.example.com',region:'us-east-1',serverId:'xyz'});
 
 //cwbLogs.log('errors', 'Dual message');
 //cwbLogs.log('signups', 'Some user');
