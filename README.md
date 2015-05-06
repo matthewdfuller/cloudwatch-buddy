@@ -80,6 +80,8 @@ The following metrics options are supported:
 
 `timeout` - The interval, in seconds, to submit your metrics. The minimum is 60 seconds (AWS CloudWatch charts only show minute-level metrics) and the maximum is 30 minutes (1800 s). The default is 120 seconds.
 
+`debug` - Whether messages should be printed to the console; helps with debugging
+
 ### Logs
 
 The following logs options are supported:
@@ -96,6 +98,7 @@ The following logs options are supported:
 
 `addInstanceId` - Whether the EC2 instance ID should be included in the log message. The default is false. The module will attempt to load the instance ID from the AWS metadata service. If it cannot be determined, the instance ID will become "unknown".
 
+`debug` - Whether messages should be printed to the console; helps with debugging
 
 ## Permissions
 
