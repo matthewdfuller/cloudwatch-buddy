@@ -82,7 +82,7 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
                                 });
                             } else {
                                 if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : ERROR : Error putting logs : ' + err); }
-                                callback(err);
+                                callback(); // An error for one stream shouldn't prevent others from being uploaded
                             }
                         } else {
                             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Successfully put logs for stream : ' + stream); }
