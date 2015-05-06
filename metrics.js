@@ -40,10 +40,13 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
 
     var _namespace = options.namespace;
     var _timeout = (options.timeout && typeof options.timeout === 'number' && options.timeout >= 60 && options.timeout <= 1800) ? options.timeout : 120;
+    var _debug = (options.debug && typeof options.debug === 'boolean') ? options.debug : false;
     //var _maxSize = (typeof options.maxSize === 'number' && options.maxSize < 40000) ? options.maxSize : 40000;  // Max upload size if 40KB // TODO: add this option
 
     var putMetricData = function() {
         clearInterval(_uploadInterval);
+
+        if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Put metrics called'); }
 
         var params = {
             MetricData:[],
@@ -129,17 +132,20 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
         if (params.MetricData.length > 0) {
             // TODO: Check size before sending and split if needed
             cloudwatch.putMetricData(params, function(err, data){
-                
+                if (err && _debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : ERROR : Put metrics error : ' + err); }
+                if (!err && _debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Put metrics success'); }
                 // TODO: if err, see if retryable
                 setUploadInterval();
             });
         } else {
+            if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : No metrics to put'); }
             setUploadInterval();
         }
     }
 
     var setUploadInterval = function() {
         _uploadInterval = setInterval(function(){
+            if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Timer expired, calling put metrics'); }
             putMetricData();
         }, _timeout * 1000);
     }
@@ -154,13 +160,19 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
         if (_increments[key] === undefined) {
             _increments[key] = 0;
         }
+
+        if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Incrementing metric : ' + key); }
         _increments[key]++;
     };
 
     api.stat = function(key, value, unit, dimensions) {
-        if (!unit || validMetricValues.indexOf(unit) === -1) { return; } // Only accept valid AWS metrics
+        if (!unit || validMetricValues.indexOf(unit) === -1) { 
+            if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : ERROR : Error adding stat : Invalid unit : ' + unit); }
+            return;
+        } // Only accept valid AWS metrics
 
         if (_stats[key] === undefined && !dimensions) {
+            if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Adding stats key : ' + key); }
             _stats[key] = {
                 Unit: unit,
                 Maximum: value,
@@ -172,7 +184,10 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
             var convertedDimensions = [];
 
             for (name in dimensions) {
-                if (typeof name !== 'string' || typeof dimensions[name] === 'object') { continue; }   // Only allow string - string / integer mappings
+                if (typeof name !== 'string' || typeof dimensions[name] === 'object') {
+                    if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : ERROR : Invalid dimensions : ' + JSON.stringify(dimensions[name])); }
+                    continue;
+                }   // Only allow string - string / integer mappings
 
                 convertedDimensions.push({
                     Name: name,
@@ -198,6 +213,8 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
             }
 
             if (!dimensionsFound) {
+                if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Adding stat with dimensions : ' + key); }
+
                 _statsWithDimensions.push({
                     MetricName: key,
                     Unit: unit,
@@ -209,6 +226,8 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                 });
             }
         } else {
+            if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Updating existing stats : ' + key); }
+
             _stats[key].Maximum = value > _stats[key].Maximum ? value : _stats[key].Maximum;
             _stats[key].Minimum = value < _stats[key].Minimum ? value : _stats[key].Minimum;
             _stats[key].SampleCount++;
@@ -217,10 +236,6 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
     };
 
     return api;
-}
-
-function compareObjects(obj1, obj2) {
-
 }
 
 module.exports = CloudWatchBuddyMetrics;
