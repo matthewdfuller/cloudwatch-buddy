@@ -5,7 +5,7 @@ WARNING: This is currently in "beta" and has not been extensively tested. Please
 
 ## Description
 
-cloudwatch-buddy is a node module which easily allows for the sending of CloudWatch metrics, statistics, and logs to AWS CloudWatch. Using this module, you can easily replace StatsD with AWS CloudWatch. It gracefully hadles single increments (such as pageviews), as well as more complex measurements (page load times or size) with sum, minimums, and maximums with custom dimensions. Additionally, it can stream logs to AWS, dealing with the timestamps and formatting issues. It also manages periodic sending of logs and the AWS "next token" pattern.
+cloudwatch-buddy is a node module which easily allows for the sending of CloudWatch metrics, statistics, and logs to AWS CloudWatch. Using this module, you can easily replace StatsD with AWS CloudWatch. It gracefully hadles single increments (such as pageviews), as well as more complex measurements (page load times or size) with sum, minimums, and maximums with custom dimensions. Additionally, it can stream logs to AWS, dealing with the timestamps and formatting issues. It also manages periodic sending of logs and the AWS "next token" pattern, as well as uploading copies of the log files to an S3 bucket of your choosing.
 
 ## Features
 
@@ -16,6 +16,7 @@ cloudwatch-buddy is a node module which easily allows for the sending of CloudWa
 * Log ordering
 * Retrying of failed data submissions
 * Sending 0 as value so application has data
+* S3 bucket uploads
 
 ## Usage
 
@@ -44,7 +45,10 @@ var logsOptions = {
 	maxSize: 10000,
 	addInstanceId: true,
 	addTimestamp: true,
-	logFormat: 'string'
+	logFormat: 'string',
+	debug: true,
+	s3Bucket: 'mybucket.example.com',
+	s3Prefix: 'app/test'
 };
 
 var cwbMetrics = new CloudWatchBuddy(awsOptions).metrics(metricsOptions);
@@ -99,6 +103,10 @@ The following logs options are supported:
 `addInstanceId` - Whether the EC2 instance ID should be included in the log message. The default is false. The module will attempt to load the instance ID from the AWS metadata service. If it cannot be determined, the instance ID will become "unknown".
 
 `debug` - Whether messages should be printed to the console; helps with debugging
+
+`s3Bucket` - If included, copies of the logs will be uploaded to this bucket (also requires s3Prefix to be set).
+
+`s3Prefix` - If included, copies of the logs will be uploaded to this prefix within the bucket (also requires s3Bucket to be set).
 
 ## Permissions
 
