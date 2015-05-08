@@ -1,5 +1,8 @@
+### 0.0.7
+* Fixing a bug - accidentally published version where logs default timeout was 5 seconds
+
 ### 0.0.6
-* Added the ability to copy logs to S3 using s3Bucket and s3Prefix options
+* Added the ability to copy logs to S3 using s3Bucket and s3Prefix options DO NOT USE - contains bug (see above)
 
 ### 0.0.5
 * Added debug option to log to console all events
