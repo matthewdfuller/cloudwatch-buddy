@@ -1,6 +1,6 @@
 var async = require('async');
 
-var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
+var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
 
     var api = {};
 
@@ -13,12 +13,14 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
     var _uploadInterval;
 
     var _logGroup = options.logGroup;
-    var _timeout = (options.timeout && typeof options.timeout === 'number' && options.timeout >= 60 && options.timeout <= 1800) ? options.timeout : 120;
+    var _timeout = (options.timeout && typeof options.timeout === 'number' && options.timeout >= 60 && options.timeout <= 1800) ? options.timeout : 5;
     var _maxSize = (options.maxSize && typeof options.maxSize === 'number' && options.maxSize < 1048576 && options.maxSize > 5000) ? options.maxSize : 200000;  // Default upload size of 200KB, AWS max of 1,048,576 bytes
     var _logFormat = (options.logFormat && typeof options.logFormat === 'string' && (options.logFormat === 'string' || options.logFormat === 'json')) ? options.logFormat : 'string';
     var _addTimestamp = (options.addTimestamp && typeof options.addTimestamp === 'boolean') ? options.addTimestamp : false;
     var _addInstanceId = (options.addInstanceId && typeof options.addInstanceId === 'boolean') ? options.addInstanceId : false;
     var _debug = (options.debug && typeof options.debug === 'boolean') ? options.debug : false;
+    var _s3Bucket = (options.s3Bucket && typeof options.s3Bucket === 'string') ? options.s3Bucket : false;
+    var _s3Prefix = (options.s3Prefix && typeof options.s3Prefix === 'string') ? options.s3Prefix : false;
 
     var _instanceId = 'unknown';
 
@@ -50,6 +52,11 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
 
             if (!_logsToSend[stream].length) {
                 return callback();    // go to the next one
+            }
+
+            // If S3 option is selected, upload to S3 too
+            if (_s3Bucket && _s3Prefix) {
+                uploadLogsToS3(stream, _logsToSend[stream]); // Do this synchronously
             }
 
             checkIfLogStreamExistsAndCreateItIfItDoesNot(stream, function(err, data){
@@ -98,6 +105,28 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, options){
             }
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Finished putting logs. Resetting timer'); }
             setUploadInterval();    // Reset timer for next loop
+        });
+    };
+
+    var uploadLogsToS3 = function(stream, logData) {
+        if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Adding logs to S3 : ' + stream); }
+
+        logFile = '';
+        for (log in logData) {
+            logFile += logData[log].message + '\n';
+        }
+        
+        var timestamp = new Date();
+        
+        var params = {
+            Bucket: _s3Bucket,
+            Key: _s3Prefix + '/' + stream + '/' + timestamp.getFullYear() + '-' + ('0' + (timestamp.getMonth()+1)).slice(-2) + '-' + ('0' + (timestamp.getDate())).slice(-2) + '-' + ('0' + (timestamp.getHours())).slice(-2) + '-' + ('0' + (timestamp.getMinutes())).slice(-2) + '-' + ('0' + (timestamp.getSeconds())).slice(-2) + '-' + timestamp.getMilliseconds() + '.log',
+            Body: logFile
+        };
+
+        s3.putObject(params, function(err, data){
+            if (err && _debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : ERROR : S3 Error uploading logs : ' + stream + ' : ' + err); }
+            else if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Logs uploaded to S3 successfully : ' + stream); }
         });
     };
 

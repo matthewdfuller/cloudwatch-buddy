@@ -35,7 +35,9 @@ var CloudWatchBuddy = function(aws){
 
             var cloudwatchlogs = new AWS.CloudWatchLogs(aws);
             var svc = new AWS.MetadataService(aws);
-            return new logsHelper(cloudwatchlogs, svc, options);
+            var s3 = new AWS.S3(aws);
+
+            return new logsHelper(cloudwatchlogs, svc, s3, options);
         }
     }
 }
