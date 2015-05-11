@@ -196,7 +196,7 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
 
             _logs[stream].push({
                 timestamp: new Date().getTime(),
-                message: JSON.stringify(logObj, null, 2)    // AWS only accepts a string
+                message: JSON.stringify(logObj)    // AWS only accepts a string
             });
         }
 
