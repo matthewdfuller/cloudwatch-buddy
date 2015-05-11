@@ -1,3 +1,6 @@
+### 0.0.8
+* Removing spacing in JSON stringify so logs in S3 are stored as one line
+
 ### 0.0.7
 * Fixing a bug - accidentally published version where logs default timeout was 5 seconds
 
