@@ -1,3 +1,6 @@
+### 0.0.9
+* Adding ability to subfolder logs in S3
+
 ### 0.0.8
 * Removing spacing in JSON stringify so logs in S3 are stored as one line
 

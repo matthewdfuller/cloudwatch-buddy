@@ -19,6 +19,7 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
     var _addTimestamp = (options.addTimestamp && typeof options.addTimestamp === 'boolean') ? options.addTimestamp : false;
     var _addInstanceId = (options.addInstanceId && typeof options.addInstanceId === 'boolean') ? options.addInstanceId : false;
     var _debug = (options.debug && typeof options.debug === 'boolean') ? options.debug : false;
+    var _s3Subfolders = (options.s3Subfolders && typeof options.s3Subfolders === 'boolean') ? options.s3Subfolders : false;
     var _s3Bucket = (options.s3Bucket && typeof options.s3Bucket === 'string') ? options.s3Bucket : false;
     var _s3Prefix = (options.s3Prefix && typeof options.s3Prefix === 'string') ? options.s3Prefix : false;
 
@@ -117,10 +118,16 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
         }
         
         var timestamp = new Date();
+
+        if (_s3Subfolders) {
+            var key = _s3Prefix + '/' + stream + '/' + timestamp.getFullYear() + '/' + ('0' + (timestamp.getMonth()+1)).slice(-2) + '/' + ('0' + (timestamp.getDate())).slice(-2) + '/' + ('0' + (timestamp.getHours())).slice(-2) + '-' + ('0' + (timestamp.getMinutes())).slice(-2) + '-' + ('0' + (timestamp.getSeconds())).slice(-2) + '-' + timestamp.getMilliseconds() + '.log';
+        } else {
+            var key = _s3Prefix + '/' + stream + '/' + timestamp.getFullYear() + '-' + ('0' + (timestamp.getMonth()+1)).slice(-2) + '-' + ('0' + (timestamp.getDate())).slice(-2) + '-' + ('0' + (timestamp.getHours())).slice(-2) + '-' + ('0' + (timestamp.getMinutes())).slice(-2) + '-' + ('0' + (timestamp.getSeconds())).slice(-2) + '-' + timestamp.getMilliseconds() + '.log';
+        }
         
         var params = {
             Bucket: _s3Bucket,
-            Key: _s3Prefix + '/' + stream + '/' + timestamp.getFullYear() + '-' + ('0' + (timestamp.getMonth()+1)).slice(-2) + '-' + ('0' + (timestamp.getDate())).slice(-2) + '-' + ('0' + (timestamp.getHours())).slice(-2) + '-' + ('0' + (timestamp.getMinutes())).slice(-2) + '-' + ('0' + (timestamp.getSeconds())).slice(-2) + '-' + timestamp.getMilliseconds() + '.log',
+            Key: key,
             Body: logFile
         };
 

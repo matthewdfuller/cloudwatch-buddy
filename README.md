@@ -48,7 +48,8 @@ var logsOptions = {
 	logFormat: 'string',
 	debug: true,
 	s3Bucket: 'mybucket.example.com',
-	s3Prefix: 'app/test'
+	s3Prefix: 'app/test',
+	s3Subfolders: true
 };
 
 var cwbMetrics = new CloudWatchBuddy(awsOptions).metrics(metricsOptions);
@@ -107,6 +108,8 @@ The following logs options are supported:
 `s3Bucket` - If included, copies of the logs will be uploaded to this bucket (also requires s3Prefix to be set).
 
 `s3Prefix` - If included, copies of the logs will be uploaded to this prefix within the bucket (also requires s3Bucket to be set).
+
+`s3Subfolders` - Whether logs should be put in subfolders by year / month / day. (If true, path would be bucket/2015/04/15/22-45-153.log vs bucket/2015-04-15-22-45-153.log).
 
 ## Permissions
 
