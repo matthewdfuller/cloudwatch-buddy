@@ -1,3 +1,6 @@
+### 0.0.10
+* Fixed bug affecting metrics with dimensions submitted when sample count was 0
+
 ### 0.0.9
 * Adding ability to subfolder logs in S3
 
