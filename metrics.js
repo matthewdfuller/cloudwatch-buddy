@@ -238,7 +238,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Updating existing stats : ' + key); }
 
             _stats[key].Maximum = value > _stats[key].Maximum ? value : _stats[key].Maximum;
-            _stats[key].Minimum = value < _stats[key].Minimum ? value : _stats[key].Minimum;
+            _stats[key].Minimum = (value < _stats[key].Minimum || _stats[key].Minimum === 0) ? value : _stats[key].Minimum;
             _stats[key].SampleCount++;
             _stats[key].Sum += value;
         }

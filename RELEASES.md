@@ -1,3 +1,6 @@
+### 0.0.12
+* Fixed bug causing minimum metric value to be set to zero when only one sample
+
 ### 0.0.11
 * If sample count is 0, change to 1 but keep values as 0 so the charts maintain a connected line
 
