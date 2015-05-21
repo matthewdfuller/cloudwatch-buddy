@@ -97,7 +97,8 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                     Maximum: 0,
                     Minimum: 0,
                     SampleCount: 0,
-                    Sum: 0
+                    Sum: 0,
+                    Unit: obj.Unit
                 };
             }
         }

@@ -1,3 +1,6 @@
+### 0.0.13
+* Fixed bug where unit was overwritten when multiple stats submitted in one group
+
 ### 0.0.12
 * Fixed bug causing minimum metric value to be set to zero when only one sample
 
