@@ -1,3 +1,6 @@
+### 0.0.11
+* If sample count is 0, change to 1 but keep values as 0 so the charts maintain a connected line
+
 ### 0.0.10
 * Fixed bug affecting metrics with dimensions submitted when sample count was 0
 

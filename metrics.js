@@ -72,64 +72,69 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
         // Add the stats
         if (Object.keys(_stats).length > 0) {
             for (key in _stats) {
-                if (_stats[key].SampleCount > 0) {
-                    var obj = _stats[key];
-                    var pushObj = {
-                        MetricName: key,
-                        Timestamp: new Date,
-                        Unit: obj.Unit,
-                        StatisticValues: {
-                            Maximum: obj.Maximum,
-                            Minimum: obj.Minimum,
-                            SampleCount: obj.SampleCount,
-                            Sum: obj.Sum
-                        }
-                    };
-
-                    params.MetricData.push(pushObj);
-
-                    // Reset the key
-                    _stats[key] = {
-                        Maximum: 0,
-                        Minimum: 0,
-                        SampleCount: 0,
-                        Sum: 0
-                    };
+                if (_stats[key].SampleCount === 0) {
+                    // This allows CWB to always send something, even if it is a 0 value
+                    _stats[key].SampleCount = 1;
                 }
+                var obj = _stats[key];
+                
+                var pushObj = {
+                    MetricName: key,
+                    Timestamp: new Date,
+                    Unit: obj.Unit,
+                    StatisticValues: {
+                        Maximum: obj.Maximum,
+                        Minimum: obj.Minimum,
+                        SampleCount: obj.SampleCount,
+                        Sum: obj.Sum
+                    }
+                };
+
+                params.MetricData.push(pushObj);
+
+                // Reset the key
+                _stats[key] = {
+                    Maximum: 0,
+                    Minimum: 0,
+                    SampleCount: 0,
+                    Sum: 0
+                };
             }
         }
 
         // Add stats with dimensions
         if (_statsWithDimensions.length > 0) {
             for (index in _statsWithDimensions) {
-                if (_statsWithDimensions[index].SampleCount > 0) {
-                    var obj = _statsWithDimensions[index];
-                    
-                    var pushObj = {
-                        MetricName: obj.MetricName,
-                        Timestamp: new Date,
-                        Unit: obj.Unit,
-                        StatisticValues: {
-                            Maximum: obj.Maximum,
-                            Minimum: obj.Minimum,
-                            SampleCount: obj.SampleCount,
-                            Sum: obj.Sum
-                        },
-                        Dimensions: obj.Dimensions
-                    };
-
-                    params.MetricData.push(pushObj);
-
-                    _statsWithDimensions[index] = {
-                        MetricName: obj.MetricName,
-                        Unit: obj.Unit,
-                        Maximum: 0,
-                        Minimum: 0,
-                        SampleCount: 0,
-                        Sum: 0,
-                        Dimensions: obj.Dimensions
-                    };
+                if (_statsWithDimensions[index].SampleCount === 0) {
+                    // This allows CWB to always send something, even if it is a 0 value
+                    _statsWithDimensions[index].SampleCount = 1;
                 }
+                var obj = _statsWithDimensions[index];
+                
+                var pushObj = {
+                    MetricName: obj.MetricName,
+                    Timestamp: new Date,
+                    Unit: obj.Unit,
+                    StatisticValues: {
+                        Maximum: obj.Maximum,
+                        Minimum: obj.Minimum,
+                        SampleCount: obj.SampleCount,
+                        Sum: obj.Sum
+                    },
+                    Dimensions: obj.Dimensions
+                };
+
+                params.MetricData.push(pushObj);
+
+                _statsWithDimensions[index] = {
+                    MetricName: obj.MetricName,
+                    Unit: obj.Unit,
+                    Maximum: 0,
+                    Minimum: 0,
+                    SampleCount: 0,
+                    Sum: 0,
+                    Dimensions: obj.Dimensions
+                };
             }
         }
 
