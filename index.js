@@ -25,7 +25,7 @@ var CloudWatchBuddy = function(aws){
             return new metricsHelper(cloudwatch, options);
         },
         logs: function(options) {
-            if (!options || !options.logGroup || typeof options.logGroup !== 'string' || options.logGroup.length > 512) {
+            if (!options || !options.logGroup || typeof options.logGroup !== 'string') {
                 throw new Error('Valid logs config with log group is required');
             }
 

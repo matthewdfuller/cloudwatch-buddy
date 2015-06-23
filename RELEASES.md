@@ -1,3 +1,7 @@
+### 0.0.14
+* Fixed bug where no space was added between instance ID and the message for string-format logs
+* Fixed bug causing successive log streams to be skipped if the first failed
+
 ### 0.0.13
 * Fixed bug where unit was overwritten when multiple stats submitted in one group
 

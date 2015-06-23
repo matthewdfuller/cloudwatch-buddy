@@ -63,7 +63,7 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
             checkIfLogStreamExistsAndCreateItIfItDoesNot(stream, function(err, data){
                 if (err) {
                     if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : ERROR : Error checking if log stream exists : ' + err); }
-                    callback(err);
+                    callback(); // Don't callback an error - one log stream failure shouldn't affect the other streams
                 } else {
                     // Stream now exists
                     if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Log stream exists : ' + stream); }
@@ -82,10 +82,10 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
                                     if (err) {
                                         // Still having issues
                                         if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : ERROR : Error putting logs : ' + err); }
-                                        callback(err);
+                                        callback(); // Don't callback an error for a single stream
                                     } else {
                                         _existingLogStreams[stream] = data.nextSequenceToken;   // Set this for next time
-                                        callback(err, data);
+                                        callback(null, data);
                                     }
                                 });
                             } else {
@@ -191,7 +191,7 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
             
             _logs[stream].push({
                 timestamp: new Date().getTime(),
-                message: (_addTimestamp ? new Date + ' ' : '') + (_addInstanceId ? _instanceId : '') + msg
+                message: (_addTimestamp ? new Date + ' ' : '') + (_addInstanceId ? _instanceId + ' ' : '') + msg
             });
         } else {
             var logObj = {};
