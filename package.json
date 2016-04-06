@@ -28,6 +28,7 @@
   "homepage": "https://github.com/matthewdfuller/cloudwatch-buddy",
   "dependencies": {
     "async": "^0.9.0",
-    "aws-sdk": "^2.1.24"
+    "aws-sdk": "^2.1.24",
+    "moment": "^2.12.0"
   }
 }

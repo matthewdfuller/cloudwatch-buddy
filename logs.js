@@ -1,4 +1,5 @@
-var async = require('async');
+var async = require('async'),
+    moment = require('moment');
 
 var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
 
@@ -22,6 +23,8 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
     var _s3Subfolders = (options.s3Subfolders && typeof options.s3Subfolders === 'boolean') ? options.s3Subfolders : false;
     var _s3Bucket = (options.s3Bucket && typeof options.s3Bucket === 'string') ? options.s3Bucket : false;
     var _s3Prefix = (options.s3Prefix && typeof options.s3Prefix === 'string') ? options.s3Prefix : false;
+    var _timestampPattern = (options.timestampPattern && options.timestampPattern instanceof RegExp) ? options.timestampPattern : false;
+    var _timestampFormat = (options.timestampFormat && typeof options.timestampFormat === 'string') ? options.timestampFormat : false;
 
     var _instanceId = 'unknown';
 
@@ -189,8 +192,24 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
             
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Adding log string to local stream : ' + stream); }
             
+            var timestamp = null;
+            if (_timestampPattern && _timestampFormat) {
+              var matches = msg.match(_timestampPattern);
+              if (matches.length) {
+                timestampStr = matches.length > 1 ? matches[1] : matches[0];
+                console.log('DEBUG: Timestamp', timestampStr);
+                timestamp = moment(timestampStr, _timestampFormat, true);
+                if (!timestamp.isValid()) {
+                  if (_debug) { console.warn (new Date() + ' : CloudWatchBuddyLogs : WARN : Timestamp format could not be parsed (given: ' + timestampStr + ')'); }
+                  timestamp = null;
+                }
+              } else {
+                if (_debug) { console.warn (new Date() + ' : CloudWatchBuddyLogs : WARN : Timestamp pattern could not be matched'); }
+              }
+            }
+            
             _logs[stream].push({
-                timestamp: new Date().getTime(),
+                timestamp: timestamp || new Date().getTime(),
                 message: (_addTimestamp ? new Date + ' ' : '') + (_addInstanceId ? _instanceId + ' ' : '') + msg
             });
         } else {
