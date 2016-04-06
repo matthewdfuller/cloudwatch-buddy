@@ -69,6 +69,11 @@ cwbMetrics.stat('serverload', 10, 'Percent', {
 // Send a log
 cwbLogs.log('errors', 'Test message');
 cwbLogs.log('signups', 'New user');
+
+// Force flush of all queued messages (with callback)
+cwbLogs.flush(function(err) {
+  if (err) { console.error('Something went wrong while writing log...', err); }
+});
 ```
 
 ## Options
@@ -76,6 +81,8 @@ cwbLogs.log('signups', 'New user');
 ### AWS Options
 
 The AWS options object must be a valid config object supported by AWS (see: http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html). You *must* provide a region.
+
+If no options are specified, the AWS SDK will use the default system credentials & options, if available.
 
 ### Metrics
 
