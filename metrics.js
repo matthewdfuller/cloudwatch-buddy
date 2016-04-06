@@ -43,7 +43,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
     var _debug = (options.debug && typeof options.debug === 'boolean') ? options.debug : false;
     //var _maxSize = (typeof options.maxSize === 'number' && options.maxSize < 40000) ? options.maxSize : 40000;  // Max upload size if 40KB // TODO: add this option
 
-    var putMetricData = function() {
+    var putMetricData = function(callback) {
         clearInterval(_uploadInterval);
 
         if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Put metrics called'); }
@@ -146,10 +146,12 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                 if (!err && _debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Put metrics success'); }
                 // TODO: if err, see if retryable
                 setUploadInterval();
+                if (callback) { callback(err); }
             });
         } else {
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : No metrics to put'); }
             setUploadInterval();
+            if (callback) { callback(); }
         }
     }
 
@@ -243,6 +245,11 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
             _stats[key].SampleCount++;
             _stats[key].Sum += value;
         }
+    };
+    
+    api.flush = function(callback) {
+      if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Flush called, calling put metrics'); }
+      putMetricData(callback);
     };
 
     return api;

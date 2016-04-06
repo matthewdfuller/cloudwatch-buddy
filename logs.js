@@ -36,7 +36,7 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
         });
     }
 
-    var putLogData = function() {
+    var putLogData = function(callback) {
         clearInterval(_uploadInterval);
 
         if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Put logs called'); }
@@ -106,6 +106,7 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
             }
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Finished putting logs. Resetting timer'); }
             setUploadInterval();    // Reset timer for next loop
+            if (callback) { callback(err); }
         });
     };
 
@@ -213,6 +214,11 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Size of log queue for stream ' + stream + ' ' + _queuedSize[stream] + ' bytes is greater than max size of ' + _maxSize + ' bytes'); }
             putLogData();
         }
+    };
+    
+    api.flush = function(callback) {
+      if (_debug) { console.log (new Date() + ' : CloudWatchBuddyLogs : INFO : Flush called, calling put logs'); }
+      putLogData(callback);
     };
 
     return api;
