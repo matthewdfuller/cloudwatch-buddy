@@ -5,11 +5,12 @@ var logsHelper = require(__dirname + '/logs.js');
 
 var CloudWatchBuddy = function(aws){
     // Ensure a region is passed
-    if (!aws || !aws.region) {
+    if (aws && !aws.region) {
         throw new Error('Valid AWS config with a region is required');
     }
 
-    AWS.config.update(aws);
+    // Only configure if specified (otherwise, use system-provided options)
+    if (aws) { AWS.config.update(aws); }
 
     return {
         metrics: function(options) {
