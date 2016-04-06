@@ -197,11 +197,11 @@ var CloudWatchBuddyLogs = function(cloudwatchlogs, svc, s3, options){
               var matches = msg.match(_timestampPattern);
               if (matches.length) {
                 timestampStr = matches.length > 1 ? matches[1] : matches[0];
-                console.log('DEBUG: Timestamp', timestampStr);
-                timestamp = moment(timestampStr, _timestampFormat, true);
-                if (!timestamp.isValid()) {
+                timestampMoment = moment(timestampStr, _timestampFormat, true);
+                if (!timestampMoment.isValid()) {
                   if (_debug) { console.warn (new Date() + ' : CloudWatchBuddyLogs : WARN : Timestamp format could not be parsed (given: ' + timestampStr + ')'); }
-                  timestamp = null;
+                } else {
+                  timestamp = timestampMoment.toDate();
                 }
               } else {
                 if (_debug) { console.warn (new Date() + ' : CloudWatchBuddyLogs : WARN : Timestamp pattern could not be matched'); }
